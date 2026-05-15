@@ -455,19 +455,53 @@ button {
   touch-action: manipulation;
 }
 
+
+.lang-btn.active-lang {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(200,146,42,0.08);
+}
 </style>
 
 </head>
 <body>
 <div class="container">
 
+  <!-- GAME MENU -->
+
+  <div class="screen active" id="screen-menu">
+    <div class="logo">
+      <span class="logo-sub">Restaurant party games</span>
+      <span class="logo-title">Game Night</span>
+      <div class="logo-divider">choose a game</div>
+    </div>
+
+    <div class="teams-grid" style="grid-template-columns:1fr;">
+      <button class="team-card" id="btn-open-alias" style="cursor:pointer;background:rgba(200,146,42,0.08);">
+        <div style="font-size:1.1rem;margin-bottom:0.4rem;">🎭 Alias</div>
+        <div style="font-size:0.8rem;color:rgba(255,255,255,0.5)">Describe words to your team</div>
+      </button>
+
+      <button class="team-card" id="btn-open-quiz" style="cursor:pointer;">
+        <div style="font-size:1.1rem;margin-bottom:0.4rem;">🧠 Tietovisa / Quiz</div>
+        <div style="font-size:0.8rem;color:rgba(255,255,255,0.5)">Coming soon</div>
+      </button>
+    </div>
+  </div>
+
+
   <!-- START SCREEN -->
 
-  <div class="screen active" id="screen-start">
+  <div class="screen" id="screen-start">
     <div class="logo">
       <span class="logo-sub">Selitä se sanoin</span>
       <span class="logo-title">Alias</span>
       <div class="logo-divider">ravintola-edition</div>
+
+    <div style="display:flex;gap:0.5rem;justify-content:center;margin-top:1rem;">
+      <button class="btn-secondary lang-btn active-lang" data-lang="fi">🇫🇮 Suomi</button>
+      <button class="btn-secondary lang-btn" data-lang="en">🇬🇧 English</button>
+    </div>
     </div>
 
 ```
@@ -516,6 +550,7 @@ button {
 <div class="teams-grid" id="teams-grid"></div>
 
 <button class="btn-primary" id="btn-start">Aloita peli</button>
+<button class="btn-secondary" id="btn-back-menu">← Back</button>
 <p class="info-small" id="start-info">Selittäjä kuvailee sanaa — ei saa sanoa itse sanaa!</p>
 ```
 
@@ -571,6 +606,27 @@ button {
     <button class="btn-primary" id="btn-next-team">Seuraava tiimi →</button>
     <button class="btn-secondary" id="btn-end-game">Lopeta peli</button>
   </div>
+
+
+  <!-- QUIZ SCREEN -->
+
+  <div class="screen" id="screen-quiz">
+    <div class="logo">
+      <span class="logo-sub">Quiz game</span>
+      <span class="logo-title" style="font-size:2.5rem">Coming Soon</span>
+    </div>
+
+    <div class="settings-card" style="text-align:center">
+      <div style="font-size:1rem;margin-bottom:0.7rem;">🧠</div>
+      <div style="font-size:0.9rem;color:rgba(255,255,255,0.65);line-height:1.5">
+        Tietovisa-pelitila on vielä työn alla.<br><br>
+        The quiz mode is still in development.
+      </div>
+    </div>
+
+    <button class="btn-secondary" id="btn-quiz-back">← Back</button>
+  </div>
+
 
   <!-- END SCREEN -->
 
@@ -789,7 +845,7 @@ function updateStartButton() {
   } else {
     btn.disabled = false;
     info.className = 'info-small';
-    info.textContent = 'Selittäjä kuvailee sanaa — ei saa sanoa itse sanaa tai juuria!';
+    info.textContent = 'Selittäjä kuvailee sanaa — ei saa sanoa itse sanaa!';
   }
 }
 
@@ -807,6 +863,7 @@ document.querySelectorAll('.cat-toggle').forEach(btn => {
       btn.classList.add('on');
     }
     updateStartButton();
+updateLanguage('fi');
   });
 });
 
@@ -895,7 +952,7 @@ function endRound() {
   document.getElementById('result-team-name').textContent = state.teams[state.currentTeam].name;
   document.getElementById('result-pts').textContent = state.roundCorrect;
   document.getElementById('result-breakdown').textContent =
-    `${state.roundCorrect} oikein · ${state.roundSkipped} ohitettu`;
+    `${state.roundCorrect} ${translations[currentLang].correctWord} · ${state.roundSkipped} ${translations[currentLang].skippedWord}`;
 
   const resScores = document.getElementById('result-scores');
   resScores.innerHTML = '';
@@ -966,7 +1023,7 @@ function startNewRound(teamIndex) {
   const catLabels = { kokki: 'KOKKI', tarjoilija: 'TARJOILIJA', baarimikko: 'BAARI', juomat: 'JUOMAT' };
   const activeLabels = ALL_CATS.filter(c => state.activeCats.has(c)).map(c => catLabels[c]);
   document.getElementById('cat-badge').textContent =
-    activeLabels.length === 4 ? 'KAIKKI' : activeLabels.join('\n');
+    activeLabels.length === 4 ? translations[currentLang].all : activeLabels.join('\n');
 
   showWord();
   showScreen('screen-game');
@@ -1001,7 +1058,7 @@ document.getElementById('btn-end-game').addEventListener('click', () => { showEn
 function showEndScreen() {
   const sorted = [...state.teams].sort((a,b) => b.score - a.score);
   document.getElementById('winner-name').textContent = sorted[0].name;
-  document.getElementById('winner-score').textContent = sorted[0].score + ' pistettä';
+  document.getElementById('winner-score').textContent = sorted[0].score + ' ' + translations[currentLang].points;
 
   const list = document.getElementById('final-scores-list');
   list.innerHTML = '';
@@ -1019,9 +1076,122 @@ document.getElementById('btn-restart').addEventListener('click', () => {
   showScreen('screen-start');
 });
 
+
+// ======================== TRANSLATIONS ========================
+let currentLang = 'fi';
+
+const translations = {
+  fi: {
+    subtitle: 'Selitä se sanoin',
+    categories: 'Kategoriat',
+    roundTime: 'Kierroksen aika',
+    teamCount: 'Tiimien määrä',
+    teams: 'tiimiä',
+    start: 'Aloita peli',
+    startInfo: 'Selittäjä kuvailee sanaa — ei saa sanoa itse sanaa!',
+    all: 'KAIKKI',
+    correct: '✓ Oikein',
+    skip: '↷ Ohita',
+    endRound: 'Lopeta kierros',
+    nextTeam: 'Seuraava tiimi →',
+    endGame: 'Lopeta peli',
+    playAgain: 'Pelaa uudelleen',
+    gameOver: 'Peli päättyi',
+    finalScore: 'Lopputulos',
+    winner: '🏆 Voittaja',
+    points: 'pistettä',
+    roundOver: 'Kierros ohi',
+    roundPoints: 'Pisteet tällä kierroksella',
+    correctWord: 'oikein',
+    skippedWord: 'ohitettu'
+  },
+  en: {
+    subtitle: 'Describe it with words',
+    categories: 'Categories',
+    roundTime: 'Round time',
+    teamCount: 'Teams',
+    teams: 'teams',
+    start: 'Start game',
+    startInfo: 'Describe the word — you cannot say the word itself!',
+    all: 'ALL',
+    correct: '✓ Correct',
+    skip: '↷ Skip',
+    endRound: 'End round',
+    nextTeam: 'Next team →',
+    endGame: 'End game',
+    playAgain: 'Play again',
+    gameOver: 'Game over',
+    finalScore: 'Final scores',
+    winner: '🏆 Winner',
+    points: 'points',
+    roundOver: 'Round over',
+    roundPoints: 'Points this round',
+    correctWord: 'correct',
+    skippedWord: 'skipped'
+  }
+};
+
+function updateLanguage(lang) {
+  currentLang = lang;
+  const t = translations[lang];
+
+  document.querySelector('.logo-sub').textContent = t.subtitle;
+  document.querySelectorAll('.settings-label')[0].textContent = t.categories;
+  document.querySelectorAll('.settings-label')[1].textContent = t.roundTime;
+  document.querySelectorAll('.settings-label')[2].textContent = t.teamCount;
+
+  document.getElementById('btn-start').textContent = t.start;
+  document.getElementById('start-info').textContent = t.startInfo;
+  document.getElementById('btn-correct').textContent = t.correct;
+  document.getElementById('btn-skip').textContent = t.skip;
+  document.getElementById('btn-end-round').textContent = t.endRound;
+  document.getElementById('btn-next-team').textContent = t.nextTeam;
+  document.getElementById('btn-end-game').textContent = t.endGame;
+  document.getElementById('btn-restart').textContent = t.playAgain;
+
+  document.querySelector('#screen-end .logo-sub').textContent = t.gameOver;
+  document.querySelector('#screen-end .logo-title').textContent = t.finalScore;
+  document.querySelector('.podium-label').textContent = t.winner;
+
+  document.querySelector('#screen-result .logo-sub').textContent = t.roundOver;
+  document.querySelector('#screen-result .settings-label').textContent = t.roundPoints;
+
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.remove('active-lang');
+    if (btn.dataset.lang === lang) btn.classList.add('active-lang');
+  });
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.classList.contains('lang-btn')) {
+    updateLanguage(e.target.dataset.lang);
+  }
+});
+
+
+
+// ======================== MENU ========================
+document.getElementById('btn-open-alias').addEventListener('click', () => {
+  showScreen('screen-start');
+});
+
+document.getElementById('btn-open-quiz').addEventListener('click', () => {
+  showScreen('screen-quiz');
+});
+
+document.getElementById('btn-back-menu').addEventListener('click', () => {
+  showScreen('screen-menu');
+});
+
+document.getElementById('btn-quiz-back').addEventListener('click', () => {
+  showScreen('screen-menu');
+});
+
+
 // Init
 renderTeamGrid();
 updateStartButton();
+updateLanguage('fi');
 </script>
 
 </body>
